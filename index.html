@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reaction Time Test</title>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    padding: 1rem; box-sizing: border-box;
+    font: 600 2rem system-ui, sans-serif; color: #fff; background: #2b87d1;
+    user-select: none; -webkit-user-select: none; touch-action: manipulation; cursor: pointer;
+  }
+  small { font-size: 1.1rem; font-weight: 400; line-height: 1.8; }
+  button {
+    display: block; width: 14rem; margin: 1rem auto 0; padding: .8rem;
+    font: inherit; font-size: 1.3rem; color: #2b87d1; background: #fff; border: 0; border-radius: .6rem;
+  }
+</style>
+</head>
+<body>
+<div id="msg"></div>
+<script>
+  const BLUE = "#2b87d1";
+  let state, timer, t0, n, times, next; // state: 0 = waiting for tap, 1 = red, 2 = green, 3 = menu
+  const set = (bg, html) => { document.body.style.background = bg; msg.innerHTML = html; };
+
+  const menu = () => {
+    state = 3;
+    set(BLUE, `Reaction Time Test
+      <button onpointerdown="event.stopPropagation(); go(1)">Single test</button>
+      <button onpointerdown="event.stopPropagation(); go(5)">5-test average</button>`);
+  };
+
+  const go = k => { n = k; times = []; round(); };
+
+  const round = () => {
+    state = 1;
+    set("#d12b2b", "Press fast when the screen turns green");
+    timer = setTimeout(() => { state = 2; set("#1fb84a", "Press now!"); t0 = performance.now(); },
+                       2000 + Math.random() * 3000);
+  };
+
+  document.body.onpointerdown = () => {
+    if (state === 1) {                       // pressed too early: redo this round
+      clearTimeout(timer); state = 0; next = round;
+      set(BLUE, "Too soon!<br><small>Press to retry</small>");
+    } else if (state === 2) {                // pressed after green
+      const t = Math.round(performance.now() - t0);
+      times.push(t); state = 0;
+      const done = times.length === n;
+      next = done ? menu : round;
+      set(BLUE, n === 1 ? `${t} ms<br><small>Press to go back to the menu</small>`
+        : done ? `Average: ${Math.round(times.reduce((a, b) => a + b) / n)} ms<br><small>${times.join(" ms, ")} ms<br>Press to go back to the menu</small>`
+        : `Test ${times.length} of ${n}: ${t} ms<br><small>Press for the next test</small>`);
+    } else if (state === 0) next();
+  };
+
+  menu();
+</script>
+</body>
+</html>
